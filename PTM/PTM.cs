@@ -81,25 +81,25 @@ namespace cAlgo.Robots
                 return;
             }
 
-            // 1️⃣ Determine trade direction & entry price
+            // 1. Determine trade direction & entry price
             bool isSell = args.YValue > Symbol.Ask;
             double entryPrice = isSell ? Symbol.Bid : Symbol.Ask;
 
-            // 2️⃣ SL price (mouse-controlled)
+            // 2. SL price (mouse-controlled)
             double slPrice = args.YValue;
 
-            // 3️⃣ Risk in price units
+            // 3. Risk in price units
             double risk = Math.Abs(entryPrice - slPrice);
 
             if (risk <= Symbol.TickSize)
                 return;
 
-            // 4️⃣ TP price (derived, not mouse-controlled)
+            // 4. TP price (derived, not mouse-controlled)
             double tpPrice = isSell
                 ? entryPrice - (risk * RiskRewardRatio)
                 : entryPrice + (risk * RiskRewardRatio);
 
-            // 5️⃣ Draw lines
+            // 5. Draw lines
             Chart.DrawHorizontalLine("StopLoss", slPrice, StopLossLineColor, LineWidth, LineStyle);
             Chart.DrawHorizontalLine("TakeProfit", tpPrice, TakeProfitLineColor, LineWidth, LineStyle);
 
