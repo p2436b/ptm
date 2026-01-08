@@ -53,15 +53,17 @@ namespace cAlgo.Robots
         [Parameter("Vertical Alignment", DefaultValue = VerticalAlignment.Bottom)]
         public VerticalAlignment VerticalAlignment { get; set; }
 
-        TextBlock text;
-        bool isReady = false;
+        private TextBlock _text;
+        private bool _isReady = false;
+        private double? _slPrice;
+        private TradeType? _tradeType;
 
         protected override void OnStart()
         {
-            text = new TextBlock();
-            text.IsHitTestVisible = false;
-            text.Text = "PTM v1.0.0";
-            Chart.AddControl(text);
+            _text = new TextBlock();
+            _text.IsHitTestVisible = false;
+            _text.Text = "PTM 1.0.1";
+            Chart.AddControl(_text);
             Chart.MouseMove += OnMouseMove;
             Chart.MouseUp += OnMouseUp;
         }
@@ -71,44 +73,62 @@ namespace cAlgo.Robots
             Chart.MouseMove -= OnMouseMove;
         }
 
+        protected override void OnTick()
+        {
+            if (!_isReady || _slPrice == null || _tradeType == null)
+                return;
+
+            DrawPreview();
+        }
+
         private void OnMouseMove(ChartMouseEventArgs args)
         {
             if (!(args.CtrlKey && args.ShiftKey))
             {
-                Chart.RemoveObject("StopLoss");
-                Chart.RemoveObject("TakeProfit");
-                isReady = false;
+                ClearPreview();
                 return;
             }
 
-            // 1. Determine trade direction & entry price
             bool isSell = args.YValue > Symbol.Ask;
-            double entryPrice = isSell ? Symbol.Bid : Symbol.Ask;
+            _tradeType = isSell ? TradeType.Sell : TradeType.Buy;
+            _slPrice = args.YValue;
 
-            // 2. SL price (mouse-controlled)
-            double slPrice = args.YValue;
+            DrawPreview();   // initial draw
+            _isReady = true;
+        }
 
-            // 3. Risk in price units
-            double risk = Math.Abs(entryPrice - slPrice);
+        private void DrawPreview()
+        {
+            double entryPrice =
+                _tradeType == TradeType.Buy ? Symbol.Ask : Symbol.Bid;
+
+            double risk = Math.Abs(entryPrice - _slPrice.Value);
 
             if (risk <= Symbol.TickSize)
                 return;
 
-            // 4. TP price (derived, not mouse-controlled)
-            double tpPrice = isSell
-                ? entryPrice - (risk * RiskRewardRatio)
-                : entryPrice + (risk * RiskRewardRatio);
+            double tpPrice =
+                _tradeType == TradeType.Buy
+                    ? entryPrice + (risk * RiskRewardRatio)
+                    : entryPrice - (risk * RiskRewardRatio);
 
-            // 5. Draw lines
-            Chart.DrawHorizontalLine("StopLoss", slPrice, StopLossLineColor, LineWidth, LineStyle);
-            Chart.DrawHorizontalLine("TakeProfit", tpPrice, TakeProfitLineColor, LineWidth, LineStyle);
-
-            isReady = true;
+            Chart.DrawHorizontalLine("Stop", _slPrice.Value, StopLossLineColor);
+            Chart.DrawHorizontalLine("TakeProfit", tpPrice, TakeProfitLineColor);
         }
+
+        private void ClearPreview()
+        {
+            Chart.RemoveObject("Stop");
+            Chart.RemoveObject("TakeProfit");
+            _slPrice = null;
+            _tradeType = null;
+            _isReady = false;
+        }
+
 
         private void OnMouseUp(ChartMouseEventArgs args)
         {
-            if (!(args.CtrlKey && args.ShiftKey && isReady))
+            if (!(args.CtrlKey && args.ShiftKey && _isReady))
                 return;
 
             TradeType tradeType;
@@ -154,13 +174,13 @@ namespace cAlgo.Robots
                 tpPips
             );
 
-            text.Text =
+            _text.Text =
              $"SL: {slPips:F1} pips\n" +
              $"TP: {tpPips:F1} pips\n" +
              $"Vol: {volume}\n" +
              $"{tradeType}";
 
-            isReady = false;
+            _isReady = false;
             Chart.RemoveObject("StopLoss");
         }
     }
