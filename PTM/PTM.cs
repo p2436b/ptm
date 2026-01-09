@@ -118,7 +118,7 @@ namespace cAlgo.Robots
 
         private void ClearPreview()
         {
-            Chart.RemoveObject("Stop");
+            Chart.RemoveObject("StopLoss");
             Chart.RemoveObject("TakeProfit");
             _slPrice = null;
             _tradeType = null;
