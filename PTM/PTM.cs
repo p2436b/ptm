@@ -112,8 +112,8 @@ namespace cAlgo.Robots
                     ? entryPrice + (risk * RiskRewardRatio)
                     : entryPrice - (risk * RiskRewardRatio);
 
-            Chart.DrawHorizontalLine("Stop", _slPrice.Value, StopLossLineColor);
-            Chart.DrawHorizontalLine("TakeProfit", tpPrice, TakeProfitLineColor);
+            Chart.DrawHorizontalLine("StopLoss", _slPrice.Value, StopLossLineColor, LineWidth, LineStyle);
+            Chart.DrawHorizontalLine("TakeProfit", tpPrice, TakeProfitLineColor, LineWidth, LineStyle);
         }
 
         private void ClearPreview()
